@@ -3,6 +3,7 @@ from optparse import OptionParser, OptionGroup
 import pprint
 
 version_list = [ 5 ]
+_latestVersion = 5
 # Exported names
 heap_op_list = {}
 valid_op_list = {}
@@ -24,12 +25,12 @@ pp = pprint.PrettyPrinter( indent = 4 )
 #
 # Main processing
 #
-def is_valid_op( op = None, version = None ):
+def is_valid_op( op = None, version = _latestVersion ):
     global valid_op_list
     assert( version in valid_op_list )
     return op in valid_op_list
         
-def is_heap_op( op = None, version = None ):
+def is_heap_op( op = None, version = _latestVersion ):
     global heap_op_list
     try:
         assert( version in version_list )
@@ -39,7 +40,7 @@ def is_heap_op( op = None, version = None ):
         exit(5)
     return op in heap_op_list[version]
         
-def is_heap_alloc_op( op = None, version = None ):
+def is_heap_alloc_op( op = None, version = _latestVersion ):
     global heap_alloc_list
     try:
         assert( version in version_list )
@@ -49,14 +50,14 @@ def is_heap_alloc_op( op = None, version = None ):
         exit(5)
     return op in heap_alloc_list[version]
         
-def is_method_op( op = None, version = None ):
+def is_method_op( op = None, version = _latestVersion ):
     if op == "M" or op == "E":
         return True
     else:
         return False
 
 def parse_line( line = None,
-                version = None,
+                version = _latestVersion,
                 hashobj = None,
                 hex2decflag = False,
                 logger = None ):
@@ -85,7 +86,7 @@ def hex2dec( val ):
     return retval
     
 def __parse_line_nocheck( line = None,
-                          version = None,
+                          version = _latestVersion,
                           hex2decflag = False,
                           logger = None ):
     # VERSION 5:
@@ -158,7 +159,7 @@ def __parse_line_nocheck( line = None,
     assert( ret != None )
     return ret
 
-def is_valid_version( version = None ):
+def is_valid_version( version = _latestVersion ):
     return version in version_list
 
 class ETParserIter(object):
