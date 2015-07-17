@@ -102,7 +102,7 @@ class EventIter:
     return d
 
 if __name__ == '__main__':
-  with open('201.trace', 'r') as fp:
+  with open('test1.trace', 'r') as fp:
     for e in EventIter(fp):
       pprint(e)
 
