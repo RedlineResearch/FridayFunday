@@ -22,6 +22,7 @@ z = Int('z')
 start = Int('start')
 end = Int('end')
 t = Int('t')
+type_array = Array('type_array', IntSort(), IntSort())
 
 # interval_pointsat :: Int -> Int -> Int -> Int -> Bool
 interval_pointsat = Function('interval_pointsat', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
@@ -41,13 +42,19 @@ interval_to_instant = ForAll([x, y, start, end, t], _interval_implies)
 
 solver.add(interval_to_instant)
 
-update_count = 0
+update_count = 0 #Zero is reserved
 ty2index = {}
-next_type_index = 0
+next_type_index = 1
+min_object_id = 1
+max_object_id = -1
 with open('test1.trace', 'r') as fp:
     for line in fp:
         d = parse_line(line)
         obj_id = d['objID']
+
+        if (obj_id > max_object_id):
+          max_object_id = obj_id
+ 
         if is_heap_alloc_op(d['rectype']):
             i += 1
             ty = d['type']
@@ -92,6 +99,13 @@ for o_model in heap.values():
         solver.add(interval_pointsat(obj_id, neighbor, creation_time, update_count))
 
 
+exclude_undefined = ForAll([x,y, start, end], Implies(type_function(x) == 0, And([instant_pointsat(x, y, start) == False, interval_pointsat(x, y, start, end) == False])))
+
+null_typing = ForAll([x], Implies( Or([x < min_object_id, x > max_object_id]), type_function(x) == 0))
+
+solver.add(null_typing)
+solver.add(exclude_undefined)
+
 # PointsAt(ObjectA, ObjectB, StartTime, EndTime) 
 # Type(Object, Ty)
 # ~(Exists x, y, z, t1
@@ -104,7 +118,9 @@ solver.add(Exists([x,y,z,t], And([instant_pointsat(x, z, t),
                       instant_pointsat(y, z, t),
                       type_function(x) == test_object_index,
                       type_function(y) == test_object_index,
-                      type_function(z) == test_object_index])) )
+                      type_function(z) == test_object_index,
+                      t <= update_count,
+                      t >= 1])) )
 
 
 print solver.check()
