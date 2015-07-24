@@ -15,6 +15,13 @@ class ObjectModel:
     self.ty = ty
     self.fields = {} #Field ID -> (Creation Time, ObjectID)
 
+def curry_array_sort(*sorts):
+    return reduce(lambda x, y: ArraySort(y, x), reversed(sorts[0:-1]),  sorts[-1])
+
+def mk_multiarray(name, *sorts):
+  array_range = curry_array_sort(*sorts[1:])
+  return Array(name, sorts[0], array_range)
+
 solver = Solver()
 x = Int('x')
 y = Int('y')
