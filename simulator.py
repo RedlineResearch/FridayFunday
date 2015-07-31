@@ -31,11 +31,22 @@ end = Int('end')
 t = Int('t')
 type_array = Array('type_array', IntSort(), IntSort())
 
+IntervalTupleSort = Datatype('IntervalTuple')
+IntervalTupleSort.declare('IntervalTuple',  ('from', IntSort()), ('to', IntSort()), ('start', IntSort()), ('end', IntSort()))
+IntervalTupleSort = IntervalTupleSort.create()
+
+InstantTupleSort = Datatype('InstantTuple')
+InstantTupleSort.declare('InstantTuple', ('from', IntSort()), ('to', IntSort()), ('time', IntSort()))
+InstantTupleSort = InstantTupleSort.create()
+
 # interval_pointsat :: Int -> Int -> Int -> Int -> Bool
-interval_pointsat = Function('interval_pointsat', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
+#interval_pointsat = Function('interval_pointsat', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
+interval_pointsat = Array('interval_pointsat', IntervalTupleSort, BoolSort())
 
 # instant_pointsat :: Int -> Int -> Int -> Bool
-instant_pointsat = Function('instant_pointsat', IntSort(), IntSort(), IntSort(), BoolSort())
+#instant_pointsat = Function('instant_pointsat', IntSort(), IntSort(), IntSort(), BoolSort())
+
+instant_pointsat = Array('instant_pointsat', InstantTupleSort, BoolSort() )
 
 # type_function :: Int -> Int
 type_function = Function('type_function', IntSort(), IntSort())
@@ -43,11 +54,8 @@ type_function = Function('type_function', IntSort(), IntSort())
 # ∀ (x,y,start,end,t), (  t >= start && t <= end
 #                      && interval_poinsat(x,y,start,end)
 #                      ) ⇒ instant_pointsat(x,y,t)
-_interval_condtn = And(t >= start, t <= end, interval_pointsat(x, y, start, end))
-_interval_implies = Implies(_interval_condtn, instant_pointsat(x, y, t))
-interval_to_instant = ForAll([x, y, start, end, t], _interval_implies)
-
-solver.add(interval_to_instant)
+IntervalTuple = IntervalTupleSort.IntervalTuple
+InstantTuple = InstantTupleSort.InstantTuple
 
 update_count = 0 #Zero is reserved
 ty2index = {}
@@ -85,14 +93,25 @@ with open('test1.trace', 'r') as fp:
                 if (field_id in o_model.fields):
                     (creation_time, old_target) = o_model.fields[field_id]
 
-                    solver.add(interval_pointsat(obj_id, old_target, creation_time, update_count))
+		    it = IntervalTuple(obj_id, old_target, creation_time, update_count)
+                    print it
+                    solver.add(interval_pointsat[it])
+
 
                 o_model.fields[field_id] = (update_count, new_target)
+
+	    print "---Looping over heap---"
+            for obj in heap.values():
+	       for (field, (start_time, target)) in obj.fields.iteritems():
+		   inst_tuple = InstantTuple(obj.object_id, target, update_count)
+		   print inst_tuple
+ 		   solver.add(instant_pointsat[inst_tuple])
+		
 
         elif d['rectype'] == 'D':
             o_model = heap[obj_id]
             for (creation_time, neighbor) in o_model.fields.values():
-                solver.add(interval_pointsat(obj_id, neighbor, creation_time, update_count))
+                solver.add(interval_pointsat[IntervalTuple(obj_id, neighbor, creation_time, update_count)])
             del heap[obj_id]
 
         if i == 10000:
@@ -100,18 +119,35 @@ with open('test1.trace', 'r') as fp:
             break
 
 
-
+print "Processing immortals"
 for o_model in heap.values():
+    print o_model.fields
     for (creation_time, neighbor) in o_model.fields.values():
-        solver.add(interval_pointsat(obj_id, neighbor, creation_time, update_count))
+        it = IntervalTuple(o_model.object_id, neighbor, creation_time, update_count)
+        print it
+        solver.add(interval_pointsat[it])
 
 
-exclude_undefined = ForAll([x,y, start, end], Implies(type_function(x) == 0, And([instant_pointsat(x, y, start) == False, interval_pointsat(x, y, start, end) == False])))
 
 null_typing = ForAll([x], Implies( Or([x < min_object_id, x > max_object_id]), type_function(x) == 0))
-
 solver.add(null_typing)
-solver.add(exclude_undefined)
+
+
+solver.add(interval_pointsat.default() == False)
+solver.add(instant_pointsat.default() == False)
+
+_interval_condtn = And(t >= start, t <= end,  interval_pointsat[IntervalTuple(x,y, start, end)])
+_interval_implies = Implies(_interval_condtn, instant_pointsat[InstantTuple(x, y, t)])
+interval_to_instant = ForAll([x, y, start, end, t], _interval_implies )
+
+
+not_interval_condtn = And(t >= start, t <= end,  Not(interval_pointsat[IntervalTuple(x,y, start, end)]))
+not_interval_implies = Implies(not_interval_condtn, Not(instant_pointsat[InstantTuple(x, y, t)]))
+not_interval_to_instant = ForAll([x, y, start, end, t], not_interval_implies)
+
+
+# solver.add(interval_to_instant)
+# solver.add(not_interval_to_instant)
 
 # PointsAt(ObjectA, ObjectB, StartTime, EndTime) 
 # Type(Object, Ty)
@@ -121,13 +157,18 @@ solver.add(exclude_undefined)
 
 test_object_index = ty2index["LTestObject;"]
 
-solver.add(Exists([x,y,z,t], And([instant_pointsat(x, z, t),
-                      instant_pointsat(y, z, t),
+solver.add(Exists([x,y,z,t], And([instant_pointsat[InstantTuple(x, z, t)],
+                      instant_pointsat[InstantTuple(y, z, t)],
                       type_function(x) == test_object_index,
                       type_function(y) == test_object_index,
                       type_function(z) == test_object_index,
                       t <= update_count,
                       t >= 1])) )
+
+solver.add(instant_pointsat[InstantTuple(3,4,1)] == False)
+solver.add(instant_pointsat[InstantTuple(3,4,2)] == False)
+solver.add(instant_pointsat[InstantTuple(3,4,3)] == False)
+solver.add(instant_pointsat[InstantTuple(3,4,4)] == False)
 
 
 print solver.check()
