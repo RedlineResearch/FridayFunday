@@ -15,12 +15,18 @@ class ObjectModel:
     self.ty = ty
     self.fields = {} #Field ID -> (Creation Time, ObjectID)
 def rulegen(obj_id, old_target, creation_time, update_count):
-    print "pointsTo('A%s','A%s',%d,%d)"%(obj_id, old_target, creation_time, update_count)
+    print "pointsTo('A%s','A%s',%d,%d)."%(obj_id, old_target, creation_time, update_count)
+
+def timestamp_rule(final_time):
+    print "timestamp(0)."
+    print "timestamp(?T) :- ?s + 1 = ?t, timestamp(?s), ?t <= %d."%(final_time)
+
 update_count = 0 #Zero is reserved
 ty2index = {}
 next_type_index = 1
 min_object_id = 1
 max_object_id = -1
+
 with open('test1.trace', 'r') as fp:
     for line in fp:
         d = parse_line(line)
@@ -66,3 +72,5 @@ print "\n//Processing immortals"
 for o_model in heap.values():
     for (creation_time, neighbor) in o_model.fields.values():
         rulegen(o_model.object_id, neighbor, creation_time, update_count)
+
+timestamp_rule(update_count)
