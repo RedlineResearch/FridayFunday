@@ -85,3 +85,12 @@ for o_model in heap.values():
         rulegen(o_model.object_id, neighbor, creation_time, update_count)
 
 timestamp_rule(update_count)
+
+# End of trace processing
+
+line = input(prompt = "?>").rstrip()
+while line != ":)":
+    print line
+    line = input(prompt = "?>").rstrip()
+
+print "q"
