@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #elephant tracks to datalog format
+import argparse
 from etparser import is_heap_alloc_op, is_heap_op
 from etparser import parse_event as parse_line
 from pprint import PrettyPrinter
@@ -21,13 +22,20 @@ def timestamp_rule(final_time):
     print "timestamp(0)."
     print "timestamp(?T) :- ?s + 1 = ?t, timestamp(?s), ?t <= %d."%(final_time)
 
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument( "source", help = "Source trace file." )
+    args = parser.parse_args()
+    return args.source
+
 update_count = 0 #Zero is reserved
 ty2index = {}
 next_type_index = 1
 min_object_id = 1
 max_object_id = -1
 
-with open('test1.trace', 'r') as fp:
+tracefile = get_args()
+with open(tracefile, 'r') as fp:
     for line in fp:
         d = parse_line(line)
         obj_id = d['objID']
