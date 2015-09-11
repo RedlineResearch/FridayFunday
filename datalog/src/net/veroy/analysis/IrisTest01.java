@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
@@ -16,9 +17,11 @@ import org.deri.iris.EvaluationException;
 import org.deri.iris.KnowledgeBaseFactory;
 import org.deri.iris.api.IKnowledgeBase;
 import org.deri.iris.api.basics.IQuery;
+import org.deri.iris.api.terms.IVariable;
 import org.deri.iris.compiler.Parser;
 import org.deri.iris.compiler.ParserException;
 import org.deri.iris.storage.IRelation;
+
 /**
  * @author rveroy
  *
@@ -91,16 +94,20 @@ public class IrisTest01 {
         for (Iterator<IQuery> iter = queryList.iterator(); iter.hasNext(); ) {
             IQuery query = iter.next();
             IRelation result;
+            ArrayList<IVariable> vars = new ArrayList<IVariable>();
             try {
-                result = kbase.execute(query);
+                result = kbase.execute(query,vars);
             } catch (EvaluationException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
                 return;
             }
             System.out.println(String.format("Query %d:", num));
+            System.out.println(query.toString());
+            System.out.println(vars);
             for (int i = 0; i < result.size(); ++i) {
                 System.out.println(result.get(i).toString());
+         
             }
             num += 1;
         }
