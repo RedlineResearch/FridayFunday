@@ -19,7 +19,7 @@ def rulegen(obj_id, old_target, creation_time, update_count):
     print "pointsTo('A%s','A%s',%d,%d)."%(obj_id, old_target, creation_time, update_count)
 
 def timestamp_rule(final_time):
-    print "pointsToInstant(?A,?B,?T) :- timestamp(?T), pointsTo(?A,?B,?S,?E), ?T >= ?S, ?E >= ?T."
+    print "pointsToInstant(?A,?B,?T) :- timestamp(?T), pointsTo(?A,?B,?S,?E), ?T >= ?S, ?E > ?T."
     print "timestamp(0)."
     print "timestamp(?t):- ?s + 1 = ?t, timestamp(?s), ?t <= %d."%(final_time)
 
@@ -88,9 +88,9 @@ timestamp_rule(update_count)
 
 # End of trace processing
 
-line = input(prompt = "?>").rstrip()
+line = raw_input()
 while line != ":)":
     print line
-    line = input(prompt = "?>").rstrip()
+    line = raw_input()
 
-print "q"
+#print "q"
