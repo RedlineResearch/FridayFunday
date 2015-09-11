@@ -19,8 +19,10 @@ def rulegen(obj_id, old_target, creation_time, update_count):
     print "pointsTo('A%s','A%s',%d,%d)."%(obj_id, old_target, creation_time, update_count)
 
 def timestamp_rule(final_time):
+    print "pointsToInstant(?A,?B,?T) :- timestamp(?T), pointsTo(?A,?B,?S,?E), ?T >= ?S, ?E >= ?T."
     print "timestamp(0)."
-    print "timestamp(?T) :- ?s + 1 = ?t, timestamp(?s), ?t <= %d."%(final_time)
+    print "timestamp(?t):- ?s + 1 = ?t, timestamp(?s), ?t <= %d."%(final_time)
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -33,6 +35,7 @@ ty2index = {}
 next_type_index = 1
 min_object_id = 1
 max_object_id = -1
+
 
 tracefile = get_args()
 with open(tracefile, 'r') as fp:

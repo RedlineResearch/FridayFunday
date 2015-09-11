@@ -1,9 +1,15 @@
 /**
- *
+ * 
  */
 package net.veroy.analysis;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Scanner;
 
 import org.deri.iris.Configuration;
 import org.deri.iris.EvaluationException;
@@ -34,7 +40,7 @@ public class IrisTest01 {
                           "isMale(?y) :- hasSon(?x,?y).\n" +
                           "?-isMale(?x).\n"+
                           "?-hasSon('homer',?x).";*/
-        String program = //"pointsTo('A3',2,9).\n" +
+       /* String program = //"pointsTo('A3',2,9).\n" +
                         "pointsTo('A1','A2',0,6).\n" +
                          "pointsTo('A3','A2',2,9).\n" +
                          "pointsTo('A2','A4',2,7).\n" +
@@ -51,11 +57,25 @@ public class IrisTest01 {
                          // "?-timestamp(?T), pointsToInstant(?X ,?Z, ?T), pointsToInstant(?Y, ?Z, ?T).\n" +
                          // TODO: End
                          "?-timestamp(?T), pointsToInstant(?X ,?Z, ?T), pointsToInstant(?Y, ?Z, ?T), ?X != ?Y.\n";
-        try {
-            parser.parse(program);
-        } catch (ParserException e) {
+        */try (
+                InputStreamReader isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
+                BufferedReader bufreader = new BufferedReader(isr);
+        		) {
+	        		String line;
+	        		String program = "";
+	        		while ((line = bufreader.readLine()) != null) {
+	        		  program += line;
+	        		  program += "\n";
+	        		}
+	            parser.parse(program);
+        }
+        catch (ParserException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+        }
+        catch (IOException e) {
+            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.exit(0);
         }
         try {
              kbase = KnowledgeBaseFactory.createKnowledgeBase( parser.getFacts(),
