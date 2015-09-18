@@ -4,13 +4,11 @@
 package net.veroy.analysis;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Scanner;
 
 import org.deri.iris.Configuration;
 import org.deri.iris.EvaluationException;
