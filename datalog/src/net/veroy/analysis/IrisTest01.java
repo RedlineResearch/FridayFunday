@@ -58,7 +58,10 @@ public class IrisTest01 {
                          // "?-timestamp(?T), pointsToInstant(?X ,?Z, ?T), pointsToInstant(?Y, ?Z, ?T).\n" +
                          // TODO: End
                          "?-timestamp(?T), pointsToInstant(?X ,?Z, ?T), pointsToInstant(?Y, ?Z, ?T), ?X != ?Y.\n";
-        */try (
+        */
+	ETParser.processInput(parser);
+	System.err.println("IrisTest01: Parse success");
+	try (
                 InputStreamReader isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
                 BufferedReader bufreader = new BufferedReader(isr);
         		) {
