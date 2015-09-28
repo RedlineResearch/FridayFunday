@@ -15,6 +15,7 @@ import org.deri.iris.EvaluationException;
 import org.deri.iris.KnowledgeBaseFactory;
 import org.deri.iris.api.IKnowledgeBase;
 import org.deri.iris.api.basics.IQuery;
+import org.deri.iris.api.basics.IRule;
 import org.deri.iris.api.terms.IVariable;
 import org.deri.iris.compiler.Parser;
 import org.deri.iris.compiler.ParserException;
@@ -33,6 +34,11 @@ public class IrisTest01 {
         Configuration config = KnowledgeBaseFactory.getDefaultConfiguration();
         Parser parser = new Parser();
         IKnowledgeBase kbase;
+
+	String pathToTrace = null;
+	if(args.length > 0)
+	    pathToTrace = args[0];
+
         /*String program = "man('homer').\n" +
                           "woman('marge').\n" +
                           "hasSon('homer','bart').\n" +
@@ -59,19 +65,23 @@ public class IrisTest01 {
                          // TODO: End
                          "?-timestamp(?T), pointsToInstant(?X ,?Z, ?T), pointsToInstant(?Y, ?Z, ?T), ?X != ?Y.\n";
         */
-	ETParser.processInput(parser);
-	System.err.println("IrisTest01: Parse success");
+
+
 	try (
                 InputStreamReader isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
                 BufferedReader bufreader = new BufferedReader(isr);
         		) {
 	        		String line;
-	        		String program = "";
+	        		String program = ETParser.processInput(pathToTrace);
+				System.out.println("Parse success. Please enter your queries.");
+				System.out.println("Enter Ctrl-D to cease input.");
+				System.out.print("> ");
 	        		while ((line = bufreader.readLine()) != null) {
 	        		  program += line;
 	        		  program += "\n";
+				  System.out.print("> ");
 	        		}
-	            parser.parse(program);
+				parser.parse(program);
         }
         catch (ParserException e) {
             // TODO Auto-generated catch block
@@ -85,12 +95,17 @@ public class IrisTest01 {
              kbase = KnowledgeBaseFactory.createKnowledgeBase( parser.getFacts(),
                                                                parser.getRules(),
                                                                config );
+
         } catch (EvaluationException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
             return;
         }
         List<IQuery> queryList = parser.getQueries();
+	System.err.println(parser.getRules().size());
+	for(Iterator<IRule> iter = parser.getRules().iterator(); iter.hasNext(); ){
+	    System.err.println(iter.next());
+	}
         int num = 0;
         for (Iterator<IQuery> iter = queryList.iterator(); iter.hasNext(); ) {
             IQuery query = iter.next();
@@ -106,6 +121,7 @@ public class IrisTest01 {
             System.out.println(String.format("Query %d:", num));
             System.out.println(query.toString());
             System.out.println(vars);
+            System.out.println(result.size());
             for (int i = 0; i < result.size(); ++i) {
                 System.out.println(result.get(i).toString());
          
