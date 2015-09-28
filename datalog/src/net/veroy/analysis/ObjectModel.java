@@ -1,6 +1,7 @@
 package net.veroy.analysis;
 
 import java.util.HashMap;
+import java.util.Collection;
 
 public class ObjectModel {
     private int _objId;
@@ -23,6 +24,14 @@ public class ObjectModel {
 
     public boolean hasField(int fieldId){
 	return fields.containsKey(fieldId);
+    }
+
+    public Collection<FieldData> getFields(){
+	return fields.values();
+    }
+
+    public int get_objId(){
+	return _objId;
     }
     
 
