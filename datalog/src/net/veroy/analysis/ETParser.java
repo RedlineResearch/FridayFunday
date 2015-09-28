@@ -1,6 +1,5 @@
 package net.veroy.analysis;
 
-
 //import net.veroy.guava.benchmark.cache.ObjectRecord;
 //import net.veroy.guava.benchmark.cache.UpdateRecord;
 
@@ -28,15 +27,23 @@ public class ETParser {
 
     static HashMap<Integer, ObjectModel> heap;
 
-    public static void processInput(Parser p) {
+    public static String processInput(String path) {
 	heap = new HashMap<Integer, ObjectModel>();
+
+	String program = "";
 
         try {
             int i = 0;
             String line;
+	    InputStreamReader isr;
+
+	    if(path == null)
+		isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
+	    else
+		isr = new InputStreamReader(new FileInputStream(path));
+
             try (
-                  InputStreamReader isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
-                  BufferedReader bufreader = new BufferedReader(isr);
+		 BufferedReader bufreader = new BufferedReader(isr);
             ) {
                 int timeByMethod = 0;
                 while ((line = bufreader.readLine()) != null) {
@@ -53,10 +60,10 @@ public class ETParser {
 			int fieldId = rec.get_fieldId();
 			ObjectModel obj = heap.get(objId);
 			if(obj.hasField(fieldId)){
-			    ObjectModel.FieldData data = obj.getField(fieldId);
-
+			    ObjectModel.FieldData field = obj.getField(fieldId);
+			    
 			    //Process data as a fact
-
+			    program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod);
 			}
 
 			obj.addField(fieldId, rec.get_timeByMethod(), rec.get_newTgtId());
@@ -67,6 +74,10 @@ public class ETParser {
 			ObjectModel obj = heap.get(objId);
 			
 			//Process dead fields
+			for (ObjectModel.FieldData field : obj.getFields()){
+			    program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod);
+			}
+			//    rulegen(obj, neighbor, creation, update
 
 			heap.remove(objId);
 		    }
@@ -76,13 +87,71 @@ public class ETParser {
                         System.out.print(".");
                     } 
                 }
-            }
+		
+		//process immortals
+		System.err.println("Processing immortals");
+
+		for( ObjectModel obj : heap.values() ){
+		    for( ObjectModel.FieldData field : obj.getFields() ){
+			program += rulegen(obj.get_objId(), field.get_objId(), field.get_creationTime(), timeByMethod);
+		    }
+		}
+
+		program += timestampRule(timeByMethod);
+		}
+
+
             System.out.println("");
         } catch (IOException e) {
             System.err.println( e.getClass().getName() + ": " + e.getMessage() );
             System.exit(0);
         }
+
+	return program;
     }
+    
+    private static String rulegen(int from_id, int to_id, int startTime, int endTime) {
+	String obj_id = "'" + "A" + from_id + "'";
+	String tgt_id = "'" + "A" + to_id + "'";
+	String fact = "pointsTo(" + obj_id + "," + tgt_id + "," + startTime + "," + endTime + ")" + ".";
+
+	
+	System.err.println(fact);
+
+	return fact + "\n";
+	/*
+	try{
+	    p.parse(fact);
+	} catch (ParserException e){
+            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.exit(0);
+	}
+	*/
+    }
+
+    private static String timestampRule(int endTime){
+	String instantRule = "pointsToInstant(?A,?B,?T) :- timestamp(?T), pointsTo(?A,?B,?S,?E), ?T >= ?S, ?E > ?T" + ".";
+	String timestampBaseRule = "timestamp(0)" + ".";
+	String timestampIndRule = "timestamp(?t) :- ?s + 1 = ?t, timestamp(?s), ?t <= " + endTime + ".";
+
+	System.err.println(instantRule);
+	System.err.println(timestampBaseRule);
+	System.err.println(timestampIndRule);
+
+
+	return instantRule + "\n" + timestampBaseRule + "\n" + timestampIndRule + "\n";
+	/*
+	try{
+	    p.parse(instantRule);
+	    p.parse(timestampBaseRule);
+	    p.parse(timestampIndRule);
+	} catch (ParserException e){
+            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.exit(0);
+	}
+	*/
+    }
+
 
     private static boolean isUpdate(String op) {
         return op.equals("U");
@@ -133,8 +202,6 @@ public class ETParser {
             }
         }
 
-	for(String s : fields)
-	    System.err.println(s);
         int threadId = Integer.parseInt( fields[5], 16 );
         return new UpdateRecord( objId,
                                  oldTgtId,
