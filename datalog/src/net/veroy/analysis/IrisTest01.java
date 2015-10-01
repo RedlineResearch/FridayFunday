@@ -102,10 +102,7 @@ public class IrisTest01 {
             return;
         }
         List<IQuery> queryList = parser.getQueries();
-	System.err.println(parser.getRules().size());
-	for(Iterator<IRule> iter = parser.getRules().iterator(); iter.hasNext(); ){
-	    System.err.println(iter.next());
-	}
+
         int num = 0;
         for (Iterator<IQuery> iter = queryList.iterator(); iter.hasNext(); ) {
             IQuery query = iter.next();
@@ -121,10 +118,8 @@ public class IrisTest01 {
             System.out.println(String.format("Query %d:", num));
             System.out.println(query.toString());
             System.out.println(vars);
-            System.out.println(result.size());
             for (int i = 0; i < result.size(); ++i) {
                 System.out.println(result.get(i).toString());
-         
             }
             num += 1;
         }
