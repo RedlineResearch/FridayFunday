@@ -11,6 +11,9 @@ import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 
+import java.util.zip.GZIPInputStream;
+import java.util.Map;
+
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -40,7 +43,7 @@ public class ETParser {
 	    if(path == null)
 		isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
 	    else
-		isr = new InputStreamReader(new FileInputStream(path));
+		isr = new InputStreamReader(new GZIPInputStream(new FileInputStream(path)));
 
             try (
 		 BufferedReader bufreader = new BufferedReader(isr);
@@ -59,12 +62,29 @@ public class ETParser {
                         int objId = rec.get_objId();
 			int fieldId = rec.get_fieldId();
 			ObjectModel obj = heap.get(objId);
+
+			//Ignore static vars
+			if(objId == 0) continue;
+
+
+			//Object alloc record does not exist, so we make one
+			//To signify this, the object has type ""
+			//TODO: Maybe replace this type with java/lang/Object
+			if(obj == null){
+			    obj = new ObjectModel(objId, "");
+			    heap.put(objId, obj);
+			}
+
 			if(obj.hasField(fieldId)){
 			    ObjectModel.FieldData field = obj.getField(fieldId);
 			    
 			    //Process data as a fact
 			    program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod);
 			}
+
+			//Don't add a null object as a target here
+			//Represent it as a missing pointer instead
+			if(rec.get_newTgtId() == 0) continue;
 
 			obj.addField(fieldId, rec.get_timeByMethod(), rec.get_newTgtId());
 
@@ -73,6 +93,14 @@ public class ETParser {
 			int objId = rec.get_objId();
 			ObjectModel obj = heap.get(objId);
 			
+			if(objId == 0) continue;
+
+			//This death has no corresponding allocation.
+			//We can ignore it since it will have no fields either
+			if(obj == null){
+			    continue;
+			}
+
 			//Process dead fields
 			for (ObjectModel.FieldData field : obj.getFields()){
 			    program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod);
@@ -86,10 +114,14 @@ public class ETParser {
                     if (i % 10000 == 1) {
                         System.out.print(".");
                     } 
+
+		    if(i == 100000) break;
                 }
+
+		timeByMethod++;
 		
 		//process immortals
-		System.err.println("Processing immortals");
+		//System.err.println("Processing immortals");
 
 		for( ObjectModel obj : heap.values() ){
 		    for( ObjectModel.FieldData field : obj.getFields() ){
@@ -101,7 +133,8 @@ public class ETParser {
 		}
 
 
-            System.out.println("");
+            //System.out.println(program);
+	    System.out.println("\n");
         } catch (IOException e) {
             System.err.println( e.getClass().getName() + ": " + e.getMessage() );
             System.exit(0);
@@ -116,7 +149,7 @@ public class ETParser {
 	String fact = "pointsTo(" + obj_id + "," + tgt_id + "," + startTime + "," + endTime + ")" + ".";
 
 	
-	System.err.println(fact);
+	//System.err.println(fact);
 
 	return fact + "\n";
 	/*
@@ -134,9 +167,9 @@ public class ETParser {
 	String timestampBaseRule = "timestamp(0)" + ".";
 	String timestampIndRule = "timestamp(?t) :- ?s + 1 = ?t, timestamp(?s), ?t <= " + endTime + ".";
 
-	System.err.println(instantRule);
-	System.err.println(timestampBaseRule);
-	System.err.println(timestampIndRule);
+	//System.err.println(instantRule);
+	//System.err.println(timestampBaseRule);
+	//System.err.println(timestampIndRule);
 
 
 	return instantRule + "\n" + timestampBaseRule + "\n" + timestampIndRule + "\n";
@@ -212,6 +245,7 @@ public class ETParser {
     }
 
     private static DeathRecord parseDeath( String [] fields, int timeByMethod ){
-	return null;
+	int objId = Integer.parseInt(fields[0], 16);
+	return new DeathRecord(objId);
     }
 }
