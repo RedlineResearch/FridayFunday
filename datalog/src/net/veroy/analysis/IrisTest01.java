@@ -35,54 +35,55 @@ public class IrisTest01 {
         Parser parser = new Parser();
         IKnowledgeBase kbase;
 
-	String pathToTrace = null;
-	if(args.length > 0)
-	    pathToTrace = args[0];
+        String pathToTrace = null;
+        if(args.length > 0) {
+            pathToTrace = args[0];
+        }
 
         /*String program = "man('homer').\n" +
-                          "woman('marge').\n" +
-                          "hasSon('homer','bart').\n" +
-                          "isMale(?x) :- man(?x).\n" +
-                          "isFemale(?x) :- woman(?x).\n" +
-                          "isMale(?y) :- hasSon(?x,?y).\n" +
-                          "?-isMale(?x).\n"+
-                          "?-hasSon('homer',?x).";*/
-       /* String program = //"pointsTo('A3',2,9).\n" +
-                        "pointsTo('A1','A2',0,6).\n" +
-                         "pointsTo('A3','A2',2,9).\n" +
-                         "pointsTo('A2','A4',2,7).\n" +
-                         "pointsTo('A5','A1',1,5).\n" +
-                         "pointsTo('A1','A4',7,9).\n" +
-                         "pointsTo('A3','A4',10,14).\n" +
-                         "timestamp(0). \n" +
-                         "timestamp(?t) :- ?s + 1 = ?t, timestamp(?s), ?t <= 14. \n" +
-                         "pointsToInstant(?A,?B,?T) :- timestamp(?T), pointsTo(?A,?B,?S,?E), ?T >= ?S, ?E >= ?T.\n" +
-                         // TODO These are queries that worked. I used them to eventually develop the query I wanted.
-                         // "?-pointsTo('A3',?Z1,?ST3,?ET3),pointsTo('A1', ?Z2, ?ST1, ?ET1),?Z1=?Z2,?ST3>=?ST1.\n" +
-                         /// "?-pointsToInstant('A1',?Z1,?T).\n" +
-                         // "?-timestamp(?T), pointsToInstant('A3',?Z, ?T), pointsToInstant('A1', ?Z, ?T).\n" +
-                         // "?-timestamp(?T), pointsToInstant(?X ,?Z, ?T), pointsToInstant(?Y, ?Z, ?T).\n" +
-                         // TODO: End
-                         "?-timestamp(?T), pointsToInstant(?X ,?Z, ?T), pointsToInstant(?Y, ?Z, ?T), ?X != ?Y.\n";
+          "woman('marge').\n" +
+          "hasSon('homer','bart').\n" +
+          "isMale(?x) :- man(?x).\n" +
+          "isFemale(?x) :- woman(?x).\n" +
+          "isMale(?y) :- hasSon(?x,?y).\n" +
+          "?-isMale(?x).\n"+
+          "?-hasSon('homer',?x).";*/
+        /* String program = //"pointsTo('A3',2,9).\n" +
+           "pointsTo('A1','A2',0,6).\n" +
+           "pointsTo('A3','A2',2,9).\n" +
+           "pointsTo('A2','A4',2,7).\n" +
+           "pointsTo('A5','A1',1,5).\n" +
+           "pointsTo('A1','A4',7,9).\n" +
+           "pointsTo('A3','A4',10,14).\n" +
+           "timestamp(0). \n" +
+           "timestamp(?t) :- ?s + 1 = ?t, timestamp(?s), ?t <= 14. \n" +
+           "pointsToInstant(?A,?B,?T) :- timestamp(?T), pointsTo(?A,?B,?S,?E), ?T >= ?S, ?E >= ?T.\n" +
+        // TODO These are queries that worked. I used them to eventually develop the query I wanted.
+        // "?-pointsTo('A3',?Z1,?ST3,?ET3),pointsTo('A1', ?Z2, ?ST1, ?ET1),?Z1=?Z2,?ST3>=?ST1.\n" +
+        /// "?-pointsToInstant('A1',?Z1,?T).\n" +
+        // "?-timestamp(?T), pointsToInstant('A3',?Z, ?T), pointsToInstant('A1', ?Z, ?T).\n" +
+        // "?-timestamp(?T), pointsToInstant(?X ,?Z, ?T), pointsToInstant(?Y, ?Z, ?T).\n" +
+        // TODO: End
+        "?-timestamp(?T), pointsToInstant(?X ,?Z, ?T), pointsToInstant(?Y, ?Z, ?T), ?X != ?Y.\n";
         */
 
 
-	try (
+        try (
                 InputStreamReader isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
                 BufferedReader bufreader = new BufferedReader(isr);
-        		) {
-	        		String line;
-	        		String program = ETParser.processInput(pathToTrace);
-				System.out.println("Parse success. Please enter your queries.");
-				System.out.println("Enter Ctrl-D to cease input.");
-				System.out.print("> ");
-	        		while ((line = bufreader.readLine()) != null) {
-	        		  program += line;
-	        		  program += "\n";
-				  System.out.print("> ");
-	        		}
-				parser.parse(program);
-        }
+            ) {
+            String line;
+            String program = ETParser.processInput(pathToTrace);
+            System.out.println("Parse success. Please enter your queries.");
+            System.out.println("Enter Ctrl-D to cease input.");
+            System.out.print("> ");
+            while ((line = bufreader.readLine()) != null) {
+                program += line;
+                program += "\n";
+                System.out.print("> ");
+            }
+            parser.parse(program);
+            }
         catch (ParserException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -92,9 +93,9 @@ public class IrisTest01 {
             System.exit(0);
         }
         try {
-             kbase = KnowledgeBaseFactory.createKnowledgeBase( parser.getFacts(),
-                                                               parser.getRules(),
-                                                               config );
+            kbase = KnowledgeBaseFactory.createKnowledgeBase( parser.getFacts(),
+                    parser.getRules(),
+                    config );
 
         } catch (EvaluationException e) {
             // TODO Auto-generated catch block

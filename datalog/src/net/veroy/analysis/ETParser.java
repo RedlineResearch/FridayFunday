@@ -31,158 +31,158 @@ public class ETParser {
     static HashMap<Integer, ObjectModel> heap;
 
     public static String processInput(String path) {
-	heap = new HashMap<Integer, ObjectModel>();
+        heap = new HashMap<Integer, ObjectModel>();
 
-	String program = "";
+        String program = "";
 
         try {
             int i = 0;
             String line;
-	    InputStreamReader isr;
+            InputStreamReader isr;
 
-	    if(path == null)
-		isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
-	    else
-		isr = new InputStreamReader(new GZIPInputStream(new FileInputStream(path)));
+            if(path == null)
+                isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
+            else
+                isr = new InputStreamReader(new GZIPInputStream(new FileInputStream(path)));
 
             try (
-		 BufferedReader bufreader = new BufferedReader(isr);
-            ) {
+                    BufferedReader bufreader = new BufferedReader(isr);
+                ) {
                 int timeByMethod = 0;
                 while ((line = bufreader.readLine()) != null) {
                     // Deal with the line
                     String[] fields = line.split(" ");
                     if (isAllocation(fields[0])) {
-			ObjectRecord rec = parseAllocation( fields, timeByMethod );
-			heap.put(rec.get_objId(), new ObjectModel(rec.get_objId(), rec.get_type()));
+                        ObjectRecord rec = parseAllocation( fields, timeByMethod );
+                        heap.put(rec.get_objId(), new ObjectModel(rec.get_objId(), rec.get_type()));
                     }
                     else if (isUpdate(fields[0])) {
-			timeByMethod++;
+                        timeByMethod++;
                         UpdateRecord rec = parseUpdate( fields, timeByMethod );
                         int objId = rec.get_objId();
-			int fieldId = rec.get_fieldId();
-			ObjectModel obj = heap.get(objId);
+                        int fieldId = rec.get_fieldId();
+                        ObjectModel obj = heap.get(objId);
 
-			//Ignore static vars
-			if(objId == 0) continue;
+                        //Ignore static vars
+                        if(objId == 0) continue;
 
 
-			//Object alloc record does not exist, so we make one
-			//To signify this, the object has type ""
-			//TODO: Maybe replace this type with java/lang/Object
-			if(obj == null){
-			    obj = new ObjectModel(objId, "");
-			    heap.put(objId, obj);
-			}
+                        //Object alloc record does not exist, so we make one
+                        //To signify this, the object has type ""
+                        //TODO: Maybe replace this type with java/lang/Object
+                        if(obj == null){
+                            obj = new ObjectModel(objId, "");
+                            heap.put(objId, obj);
+                        }
 
-			if(obj.hasField(fieldId)){
-			    ObjectModel.FieldData field = obj.getField(fieldId);
-			    
-			    //Process data as a fact
-			    program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod);
-			}
+                        if(obj.hasField(fieldId)){
+                            ObjectModel.FieldData field = obj.getField(fieldId);
 
-			//Don't add a null object as a target here
-			//Represent it as a missing pointer instead
-			if(rec.get_newTgtId() == 0) continue;
+                            //Process data as a fact
+                            program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod);
+                        }
 
-			obj.addField(fieldId, rec.get_timeByMethod(), rec.get_newTgtId());
+                        //Don't add a null object as a target here
+                        //Represent it as a missing pointer instead
+                        if(rec.get_newTgtId() == 0) continue;
+
+                        obj.addField(fieldId, rec.get_timeByMethod(), rec.get_newTgtId());
 
                     } else if(isDeath(fields[0])) {
-			DeathRecord rec = parseDeath( fields, timeByMethod );
-			int objId = rec.get_objId();
-			ObjectModel obj = heap.get(objId);
-			
-			if(objId == 0) continue;
+                        DeathRecord rec = parseDeath( fields, timeByMethod );
+                        int objId = rec.get_objId();
+                        ObjectModel obj = heap.get(objId);
 
-			//This death has no corresponding allocation.
-			//We can ignore it since it will have no fields either
-			if(obj == null){
-			    continue;
-			}
+                        if(objId == 0) continue;
 
-			//Process dead fields
-			for (ObjectModel.FieldData field : obj.getFields()){
-			    program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod);
-			}
-			//    rulegen(obj, neighbor, creation, update
+                        //This death has no corresponding allocation.
+                        //We can ignore it since it will have no fields either
+                        if(obj == null){
+                            continue;
+                        }
 
-			heap.remove(objId);
-		    }
+                        //Process dead fields
+                        for (ObjectModel.FieldData field : obj.getFields()){
+                            program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod);
+                        }
+                        //    rulegen(obj, neighbor, creation, update
+
+                        heap.remove(objId);
+                    }
 
                     i += 1;
                     if (i % 10000 == 1) {
                         System.out.print(".");
                     } 
 
-		    if(i == 100000) break;
+                    if(i == 100000) break;
                 }
 
-		timeByMethod++;
-		
-		//process immortals
-		//System.err.println("Processing immortals");
+                timeByMethod++;
 
-		for( ObjectModel obj : heap.values() ){
-		    for( ObjectModel.FieldData field : obj.getFields() ){
-			program += rulegen(obj.get_objId(), field.get_objId(), field.get_creationTime(), timeByMethod);
-		    }
-		}
+                //process immortals
+                //System.err.println("Processing immortals");
 
-		program += timestampRule(timeByMethod);
-		}
+                for( ObjectModel obj : heap.values() ){
+                    for( ObjectModel.FieldData field : obj.getFields() ){
+                        program += rulegen(obj.get_objId(), field.get_objId(), field.get_creationTime(), timeByMethod);
+                    }
+                }
+
+                program += timestampRule(timeByMethod);
+                }
 
 
             //System.out.println(program);
-	    System.out.println("\n");
+            System.out.println("\n");
         } catch (IOException e) {
             System.err.println( e.getClass().getName() + ": " + e.getMessage() );
             System.exit(0);
         }
 
-	return program;
+        return program;
     }
-    
+
     private static String rulegen(int from_id, int to_id, int startTime, int endTime) {
-	String obj_id = "'" + "A" + from_id + "'";
-	String tgt_id = "'" + "A" + to_id + "'";
-	String fact = "pointsTo(" + obj_id + "," + tgt_id + "," + startTime + "," + endTime + ")" + ".";
+        String obj_id = "'" + "A" + from_id + "'";
+        String tgt_id = "'" + "A" + to_id + "'";
+        String fact = "pointsTo(" + obj_id + "," + tgt_id + "," + startTime + "," + endTime + ")" + ".";
 
-	
-	//System.err.println(fact);
 
-	return fact + "\n";
-	/*
-	try{
-	    p.parse(fact);
-	} catch (ParserException e){
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
-            System.exit(0);
-	}
-	*/
+        //System.err.println(fact);
+
+        return fact + "\n";
+        /*
+           try{
+           p.parse(fact);
+           } catch (ParserException e){
+           System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+           System.exit(0);
+           }
+           */
     }
 
     private static String timestampRule(int endTime){
-	String instantRule = "pointsToInstant(?A,?B,?T) :- timestamp(?T), pointsTo(?A,?B,?S,?E), ?T >= ?S, ?E > ?T" + ".";
-	String timestampBaseRule = "timestamp(0)" + ".";
-	String timestampIndRule = "timestamp(?t) :- ?s + 1 = ?t, timestamp(?s), ?t <= " + endTime + ".";
+        String instantRule = "pointsToInstant(?A,?B,?T) :- timestamp(?T), pointsTo(?A,?B,?S,?E), ?T >= ?S, ?E > ?T" + ".";
+        String timestampBaseRule = "timestamp(0)" + ".";
+        String timestampIndRule = "timestamp(?t) :- ?s + 1 = ?t, timestamp(?s), ?t <= " + endTime + ".";
 
-	//System.err.println(instantRule);
-	//System.err.println(timestampBaseRule);
-	//System.err.println(timestampIndRule);
+        //System.err.println(instantRule);
+        //System.err.println(timestampBaseRule);
+        //System.err.println(timestampIndRule);
 
 
-	return instantRule + "\n" + timestampBaseRule + "\n" + timestampIndRule + "\n";
-	/*
-	try{
-	    p.parse(instantRule);
-	    p.parse(timestampBaseRule);
-	    p.parse(timestampIndRule);
-	} catch (ParserException e){
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
-            System.exit(0);
-	}
-	*/
+        return instantRule + "\n" + timestampBaseRule + "\n" + timestampIndRule + "\n";
+        /*
+           try{
+           p.parse(instantRule);
+           p.parse(timestampBaseRule);
+           p.parse(timestampIndRule);
+           } catch (ParserException e){
+           System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+           System.exit(0);
+           }
+           */
     }
 
 
@@ -208,11 +208,11 @@ public class ETParser {
         // int length = Integer.parseInt( fields[5], 16 );
         // int threadId = Integer.parseInt( fields[6], 16 );
         return new ObjectRecord( 0, // Autogenerated by database
-                                 objId,
-                                 0, // Unknown at this point
-                                 timeByMethod,
-                                 0, // Unknown at this point
-                                 type );
+                objId,
+                0, // Unknown at this point
+                timeByMethod,
+                0, // Unknown at this point
+                type );
     }
 
     private static UpdateRecord parseUpdate( String[] fields, int timeByMethod ) {
@@ -237,15 +237,15 @@ public class ETParser {
 
         int threadId = Integer.parseInt( fields[5], 16 );
         return new UpdateRecord( objId,
-                                 oldTgtId,
-                                 newTgtId,
-                                 fieldId,
-                                 threadId,
-                                 timeByMethod );
+                oldTgtId,
+                newTgtId,
+                fieldId,
+                threadId,
+                timeByMethod );
     }
 
     private static DeathRecord parseDeath( String [] fields, int timeByMethod ){
-	int objId = Integer.parseInt(fields[0], 16);
-	return new DeathRecord(objId);
+        int objId = Integer.parseInt(fields[0], 16);
+        return new DeathRecord(objId);
     }
 }
