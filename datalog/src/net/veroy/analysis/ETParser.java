@@ -52,8 +52,10 @@ public class ETParser {
 
             if(path == null)
                 isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
-            else
+            else if(path.contains(".gz"))
                 isr = new InputStreamReader(new GZIPInputStream(new FileInputStream(path)));
+	    else
+                isr = new InputStreamReader(new FileInputStream(path));
 
             try (
                     BufferedReader bufreader = new BufferedReader(isr);
@@ -115,7 +117,7 @@ public class ETParser {
                         for (ObjectModel.FieldData field : obj.getFields()){
                             program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod, conn);
                         }
-                        //    rulegen(obj, neighbor, creation, update
+
 
                         heap.remove(objId);
                     }
