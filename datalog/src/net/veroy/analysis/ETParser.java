@@ -36,11 +36,8 @@ public class ETParser {
 
     static HashMap<Integer, ObjectModel> heap;
 
-    // TODO There's probably a better place or way to specify the table.
-    // But here it is for now.
-    private final static String table = "objects";
 
-    public static String processInput(String path, Connection conn) throws SQLException {
+    public static String processInput(String path, DBInterface db_interface) throws SQLException {
         heap = new HashMap<Integer, ObjectModel>();
 
         String program = "";
@@ -91,7 +88,7 @@ public class ETParser {
                             ObjectModel.FieldData field = obj.getField(fieldId);
 
                             //Process data as a fact
-                            program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod, conn);
+                            program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod, db_interface);
                         }
 
                         //Don't add a null object as a target here
@@ -115,7 +112,7 @@ public class ETParser {
 
                         //Process dead fields
                         for (ObjectModel.FieldData field : obj.getFields()){
-                            program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod, conn);
+                            program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod, db_interface);
                         }
 
 
@@ -137,7 +134,7 @@ public class ETParser {
 
                 for( ObjectModel obj : heap.values() ){
                     for( ObjectModel.FieldData field : obj.getFields() ){
-                        program += rulegen(obj.get_objId(), field.get_objId(), field.get_creationTime(), timeByMethod, conn);
+                        program += rulegen(obj.get_objId(), field.get_objId(), field.get_creationTime(), timeByMethod, db_interface);
                     }
                 }
 
@@ -155,16 +152,16 @@ public class ETParser {
         return program;
     }
 
-    private static String rulegen(int from_id, int to_id, int startTime, int endTime, Connection conn) throws SQLException {
+    private static String rulegen(int from_id,
+                                  int to_id,
+                                  int startTime,
+                                  int endTime,
+                                  DBInterface db_interface) throws SQLException {
         String obj_id = "'" + "A" + from_id + "'";
         String tgt_id = "'" + "A" + to_id + "'";
         String fact = "pointsTo(" + obj_id + "," + tgt_id + "," + startTime + "," + endTime + ")" + ".";
 
-        Statement stmt = conn.createStatement();
-        stmt.executeUpdate( String.format( "INSERT OR REPLACE INTO %s" +
-                                           "(fromId,tgtId,startTime,endTime) " +
-                                           " VALUES (%d,%d,%d,%d);",
-                                           table, from_id, to_id, startTime, endTime ) );
+        db_interface.insertPointer(from_id, to_id, startTime, endTime);
         //System.err.println(fact);
 
         return fact + "\n";
