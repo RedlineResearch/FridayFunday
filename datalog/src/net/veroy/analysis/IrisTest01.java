@@ -21,11 +21,19 @@ import org.deri.iris.compiler.Parser;
 import org.deri.iris.compiler.ParserException;
 import org.deri.iris.storage.IRelation;
 
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.SQLException;
+import java.sql.Connection;
+
 /**
  * @author rveroy
  *
  */
 public class IrisTest01 {
+
+    private final static String table = "objects";
 
     /**
      * @param args
@@ -67,13 +75,24 @@ public class IrisTest01 {
         "?-timestamp(?T), pointsToInstant(?X ,?Z, ?T), pointsToInstant(?Y, ?Z, ?T), ?X != ?Y.\n";
         */
 
+        Connection conn;
+        // TODO Check return value
+        conn = null;
+        try {
+            Class.forName("org.sqlite.JDBC");
+            conn = DriverManager.getConnection("jdbc:sqlite:iristest.db");
+            createDB(conn);
+        } catch ( Exception e ) {
+            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.exit(0);
+        }
 
         try (
                 InputStreamReader isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
                 BufferedReader bufreader = new BufferedReader(isr);
             ) {
             String line;
-            String program = ETParser.processInput(pathToTrace);
+            String program = ETParser.processInput(pathToTrace, conn);
             System.out.println("Parse success. Please enter your queries.");
             System.out.println("Enter Ctrl-D to cease input.");
             System.out.print("> ");
@@ -83,12 +102,16 @@ public class IrisTest01 {
                 System.out.print("> ");
             }
             parser.parse(program);
-            }
+        }
         catch (ParserException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
         catch (IOException e) {
+            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.exit(0);
+        }
+        catch (SQLException e) {
             System.err.println( e.getClass().getName() + ": " + e.getMessage() );
             System.exit(0);
         }
@@ -125,4 +148,17 @@ public class IrisTest01 {
             num += 1;
         }
     }
+
+    private static boolean createDB(Connection conn) throws SQLException {
+        Statement stmt = conn.createStatement();
+        stmt.executeUpdate( String.format( "DROP TABLE IF EXISTS %s", table ) );
+        stmt.executeUpdate( String.format( "CREATE TABLE %s " +
+                                           "( fromId INTEGER," +
+                                           "  tgtId INTEGER," +
+                                           "  startTime INTEGER," +
+                                           "  endTIme INTEGER )",
+                                           table ) );
+        return true;
+    }
+
 }
