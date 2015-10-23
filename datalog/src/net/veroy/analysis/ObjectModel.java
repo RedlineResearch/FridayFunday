@@ -6,11 +6,13 @@ import java.util.Collection;
 public class ObjectModel {
     private int _objId;
     private String _type;
+    private int _allocTime;
     private HashMap<Integer, FieldData> fields;
 
-    public ObjectModel(int objId, String type){
+    public ObjectModel(int objId, String type, int allocTime){
         this._objId = objId;
         this._type = type;
+        this._allocTime = allocTime;
         fields = new HashMap<Integer, FieldData>();
     }
 
@@ -34,6 +36,13 @@ public class ObjectModel {
         return _objId;
     }
 
+    public String get_type(){
+        return _type;
+    }
+
+    public int get_allocTime(){
+        return _allocTime;
+    }
 
     class FieldData {
         final int _creationTime;

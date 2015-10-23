@@ -67,6 +67,7 @@ public class IrisTest01 {
             ) {
             String line;
             String program = ETParser.processInput(pathToTrace, db_interface);
+            db_interface.executeUpdate();
             System.out.println("Parse success. Please enter your queries.");
             System.out.println("Enter Ctrl-D to cease input.");
             System.out.print("> ");

@@ -3,3 +3,5 @@
 *~
 *.old
 .*swp
+*.db
+*.class

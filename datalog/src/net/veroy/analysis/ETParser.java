@@ -63,7 +63,10 @@ public class ETParser {
                     String[] fields = line.split(" ");
                     if (isAllocation(fields[0])) {
                         ObjectRecord rec = parseAllocation( fields, timeByMethod );
-                        heap.put(rec.get_objId(), new ObjectModel(rec.get_objId(), rec.get_type()));
+                        heap.put( rec.get_objId(),
+                                  new ObjectModel( rec.get_objId(),
+                                                   rec.get_type(),
+                                                   timeByMethod ) );
                     }
                     else if (isUpdate(fields[0])) {
                         timeByMethod++;
@@ -75,12 +78,11 @@ public class ETParser {
                         //Ignore static vars
                         if(objId == 0) continue;
 
-
                         //Object alloc record does not exist, so we make one
                         //To signify this, the object has type ""
                         //TODO: Maybe replace this type with java/lang/Object
                         if(obj == null){
-                            obj = new ObjectModel(objId, "");
+                            obj = new ObjectModel(objId, "", timeByMethod);
                             heap.put(objId, obj);
                         }
 
@@ -109,13 +111,15 @@ public class ETParser {
                         if(obj == null){
                             continue;
                         }
-
                         //Process dead fields
                         for (ObjectModel.FieldData field : obj.getFields()){
                             program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod, db_interface);
                         }
-
-
+                        insertObject( objId,
+                                      obj.get_type(),
+                                      obj.get_allocTime(),
+                                      timeByMethod,
+                                      db_interface );
                         heap.remove(objId);
                     }
 
@@ -131,11 +135,16 @@ public class ETParser {
 
                 //process immortals
                 //System.err.println("Processing immortals");
-
                 for( ObjectModel obj : heap.values() ){
+                    // Insert Immortals into DB.
                     for( ObjectModel.FieldData field : obj.getFields() ){
                         program += rulegen(obj.get_objId(), field.get_objId(), field.get_creationTime(), timeByMethod, db_interface);
                     }
+                    insertObject( obj.get_objId(),
+                                  obj.get_type(),
+                                  obj.get_allocTime(),
+                                  timeByMethod,
+                                  db_interface );
                 }
 
                 program += timestampRule(timeByMethod);
@@ -173,6 +182,14 @@ public class ETParser {
            System.exit(0);
            }
            */
+    }
+
+    private static void insertObject( int objId,
+                                      String type,
+                                      int allocTime,
+                                      int deathTime,
+                                      DBInterface db_interface) throws SQLException {
+        db_interface.insertObject(objId, type, allocTime, deathTime);
     }
 
     private static String timestampRule(int endTime){
