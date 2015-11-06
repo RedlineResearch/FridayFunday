@@ -37,22 +37,23 @@ public class ETParser {
     static HashMap<Integer, ObjectModel> heap;
 
 
-    public static String processInput(String path, DBInterface db_interface) throws SQLException {
+    public static void processInput(String path, DBInterface db_interface) throws SQLException {
         heap = new HashMap<Integer, ObjectModel>();
 
-        String program = "";
+        // String program = "";
 
         try {
             int i = 0;
             String line;
             InputStreamReader isr;
 
-            if(path == null)
+            if(path == null) {
                 isr = new InputStreamReader(System.in, Charset.forName("UTF-8"));
-            else if(path.contains(".gz"))
+            } else if(path.contains(".gz")) {
                 isr = new InputStreamReader(new GZIPInputStream(new FileInputStream(path)));
-	    else
+            } else {
                 isr = new InputStreamReader(new FileInputStream(path));
+            }
 
             try (
                     BufferedReader bufreader = new BufferedReader(isr);
@@ -90,7 +91,7 @@ public class ETParser {
                             ObjectModel.FieldData field = obj.getField(fieldId);
 
                             //Process data as a fact
-                            program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod, db_interface);
+                            rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod, db_interface);
                         }
 
                         //Don't add a null object as a target here
@@ -113,7 +114,7 @@ public class ETParser {
                         }
                         //Process dead fields
                         for (ObjectModel.FieldData field : obj.getFields()){
-                            program += rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod, db_interface);
+                            rulegen(objId, field.get_objId(), field.get_creationTime(), timeByMethod, db_interface);
                         }
                         insertObject( objId,
                                       obj.get_type(),
@@ -128,7 +129,7 @@ public class ETParser {
                         System.out.print(".");
                     } 
 
-                    if(i == 100000) break;
+                    // ALL OR NOTHING if(i == 100000) break;
                 }
 
                 timeByMethod++;
@@ -138,7 +139,7 @@ public class ETParser {
                 for( ObjectModel obj : heap.values() ){
                     // Insert Immortals into DB.
                     for( ObjectModel.FieldData field : obj.getFields() ){
-                        program += rulegen(obj.get_objId(), field.get_objId(), field.get_creationTime(), timeByMethod, db_interface);
+                        rulegen(obj.get_objId(), field.get_objId(), field.get_creationTime(), timeByMethod, db_interface);
                     }
                     insertObject( obj.get_objId(),
                                   obj.get_type(),
@@ -147,8 +148,8 @@ public class ETParser {
                                   db_interface );
                 }
 
-                program += timestampRule(timeByMethod);
-                }
+                timestampRule(timeByMethod);
+            }
 
 
             //System.out.println(program);
@@ -157,31 +158,18 @@ public class ETParser {
             System.err.println( e.getClass().getName() + ": " + e.getMessage() );
             System.exit(0);
         }
-
-        return program;
     }
 
-    private static String rulegen(int from_id,
-                                  int to_id,
-                                  int startTime,
-                                  int endTime,
-                                  DBInterface db_interface) throws SQLException {
-        String obj_id = "'" + "A" + from_id + "'";
-        String tgt_id = "'" + "A" + to_id + "'";
-        String fact = "pointsTo(" + obj_id + "," + tgt_id + "," + startTime + "," + endTime + ")" + ".";
+    private static void rulegen(int from_id,
+                                int to_id,
+                                int startTime,
+                                int endTime,
+                                DBInterface db_interface) throws SQLException {
+        // String obj_id = "'" + "A" + from_id + "'";
+        // String tgt_id = "'" + "A" + to_id + "'";
+        // String fact = "pointsTo(" + obj_id + "," + tgt_id + "," + startTime + "," + endTime + ")" + ".";
 
         db_interface.insertPointer(from_id, to_id, startTime, endTime);
-        //System.err.println(fact);
-
-        return fact + "\n";
-        /*
-           try{
-           p.parse(fact);
-           } catch (ParserException e){
-           System.err.println( e.getClass().getName() + ": " + e.getMessage() );
-           System.exit(0);
-           }
-           */
     }
 
     private static void insertObject( int objId,

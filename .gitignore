@@ -5,3 +5,4 @@
 .*swp
 *.db
 *.class
+*db-journal

@@ -13,10 +13,11 @@ public class DBInterface {
     private final static String object_table = "objects";
     private final Connection conn;
     private final Vector<String> statement_buffer;
+    private int MAX_STMTS = 10000;
 
     DBInterface(Connection conn) {
         this.conn = conn;
-        statement_buffer = new Vector(10000);
+        statement_buffer = new Vector(MAX_STMTS);
 
         statement_buffer.add( String.format( "DROP TABLE IF EXISTS %s", pointer_table ) );
         statement_buffer.add(String.format( "CREATE TABLE %s " +
@@ -36,7 +37,7 @@ public class DBInterface {
 
 
 
-    void insertPointer(int from_id, int to_id, int start_time, int end_time) {
+    void insertPointer(int from_id, int to_id, int start_time, int end_time) throws SQLException {
         statement_buffer.add( String.format( "INSERT OR REPLACE INTO %s" +
                     "(fromId,tgtId,startTime,endTime) " +
                     " VALUES (%d,%d,%d,%d)",
@@ -47,9 +48,12 @@ public class DBInterface {
                     end_time ) );
 
 
+        if (statement_buffer.size() >= MAX_STMTS) {
+            executeUpdate();
+        }
     }
 
-    void insertObject(int id, String type, int allocTime, int deathTime) {
+    void insertObject(int id, String type, int allocTime, int deathTime) throws SQLException {
         statement_buffer.add( String.format( "INSERT OR REPLACE INTO %s" +
                                              "(objId,type,allocTime,deathTime) " +
                                              " VALUES (%d,'%s',%d,%d)",
@@ -58,6 +62,9 @@ public class DBInterface {
                                              type.replace(";",""),
                                              allocTime,
                                              deathTime ) );
+        if (statement_buffer.size() >= MAX_STMTS) {
+            executeUpdate();
+        }
     }  
 
     void executeUpdate() throws SQLException {
@@ -65,5 +72,6 @@ public class DBInterface {
             Statement stmt = this.conn.createStatement();
             stmt.executeUpdate(update);
         }
+        statement_buffer.clear();
     }
 }
